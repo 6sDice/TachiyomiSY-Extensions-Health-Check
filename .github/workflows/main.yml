@@ -1,0 +1,43 @@
+name: Health Check Automation
+
+on:
+  schedule:
+    # This is the 'cron' for every 15 minutes
+    - cron: "*/15 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch: # Allows you to run it manually for testing
+
+jobs:
+  check-health:
+    runs-on: ubuntu-latest
+    # Important: Give the bot permission to write the JSON file back to your repo
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run Health Checker
+        run: |
+          cd backend
+          python check_health.py
+
+      - name: Commit and Push status.json
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "actions@github.com"
+          git add backend/status.json
+          git commit -m "Automated Health Update: $(date)" || echo "No changes to commit"
+          git push
